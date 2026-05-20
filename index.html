@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Big Counter</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #111;
+      color: white;
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #count {
+      position: absolute;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: clamp(40px, 8vw, 90px);
+      font-weight: 800;
+      z-index: 10;
+      pointer-events: none;
+      text-shadow: 0 0 20px rgba(255,255,255,0.2);
+    }
+
+    #bigButton {
+      flex: 1;
+      width: 100%;
+      border: none;
+      background:
+        linear-gradient(
+          180deg,
+          #4ade80,
+          #16a34a
+        );
+      color: white;
+      font-size: clamp(50px, 12vw, 140px);
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 0.05s ease;
+      user-select: none;
+    }
+
+    #bigButton:active {
+      transform: scale(0.99);
+    }
+
+    .bottomBar {
+      height: 18vh;
+      min-height: 120px;
+      display: flex;
+      gap: 12px;
+      padding: 12px;
+      background: #1a1a1a;
+    }
+
+    .smallButton {
+      flex: 1;
+      border: none;
+      border-radius: 24px;
+      font-size: clamp(24px, 4vw, 42px);
+      font-weight: 700;
+      color: white;
+      cursor: pointer;
+      transition: transform 0.05s ease;
+    }
+
+    .smallButton:active {
+      transform: scale(0.97);
+    }
+
+    #minusButton {
+      background: #dc2626;
+    }
+
+    #resetButton {
+      background: #d97706;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="count">0</div>
+
+  <button id="bigButton">
+    TAP
+  </button>
+
+  <div class="bottomBar">
+    <button
+      id="minusButton"
+      class="smallButton"
+    >
+      −1
+    </button>
+
+    <button
+      id="resetButton"
+      class="smallButton"
+    >
+      RESET
+    </button>
+  </div>
+
+  <script>
+    let count = 0;
+
+    const countText =
+      document.getElementById("count");
+
+    const bigButton =
+      document.getElementById("bigButton");
+
+    const minusButton =
+      document.getElementById("minusButton");
+
+    const resetButton =
+      document.getElementById("resetButton");
+
+    function updateDisplay() {
+      countText.textContent = count;
+    }
+
+    // Web Audio API
+    const audioContext =
+      new (window.AudioContext ||
+      window.webkitAudioContext)();
+
+    function playClickSound() {
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+
+      osc.type = "square";
+      osc.frequency.value = 1800;
+
+      gain.gain.setValueAtTime(
+        0.05,
+        audioContext.currentTime
+      );
+
+      gain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        audioContext.currentTime + 0.03
+      );
+
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+
+      osc.start();
+      osc.stop(audioContext.currentTime + 0.03);
+    }
+
+    function playWarningSound() {
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(
+        500,
+        audioContext.currentTime
+      );
+
+      osc.frequency.linearRampToValueAtTime(
+        220,
+        audioContext.currentTime + 0.18
+      );
+
+      gain.gain.setValueAtTime(
+        0.08,
+        audioContext.currentTime
+      );
+
+      gain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        audioContext.currentTime + 0.2
+      );
+
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+
+      osc.start();
+      osc.stop(audioContext.currentTime + 0.2);
+    }
+
+    bigButton.addEventListener("click", async () => {
+      if (audioContext.state === "suspended") {
+        await audioContext.resume();
+      }
+
+      count++;
+      updateDisplay();
+      playClickSound();
+    });
+
+    minusButton.addEventListener("click", async () => {
+      if (audioContext.state === "suspended") {
+        await audioContext.resume();
+      }
+
+      count--;
+      updateDisplay();
+      playWarningSound();
+    });
+
+    resetButton.addEventListener("click", async () => {
+      if (audioContext.state === "suspended") {
+        await audioContext.resume();
+      }
+
+      playWarningSound();
+
+      const ok = confirm(
+        "本当にリセットしますか？"
+      );
+
+      if (ok) {
+        count = 0;
+        updateDisplay();
+      }
+    });
+
+    updateDisplay();
+  </script>
+
+</body>
+</html>
